@@ -1,0 +1,45 @@
+# Data ingestion configuration
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  
+  # CCLE/GDSC sources
+  ccle:
+    expression_url: "https://data.broadinstitute.org/ccle/CCLE_RNAseq_rsem_drug_treatment.txt"
+    mutation_url: "https://data.broadinstitute.org/ccle/CCLE_DepMap_Achre_24q2.csv"
+    
+  gdsc:
+    response_url: "https://www.cancerRxgene.org/sensitivity/downloadData"
+    
+# Stack model configuration
+model:
+  stack:
+    checkpoint: "pretrained"  # or path to custom checkpoint
+    embedding_dim: 768
+    batch_size: 32
+    
+  baselines:
+    - elastic_net
+    - random_forest
+    - mlp
+    
+# Evaluation configuration
+evaluation:
+  splits:
+    - random
+    - cold_drug
+    - cold_cell
+    
+  n_folds: 5
+  test_fraction: 0.2
+  
+  metrics:
+    - r2
+    - pearson
+    - mse
+    
+# Experiment tracking
+logging:
+  output_dir: "outputs"
+  experiment_name: "stack_benchmark"
+  wandb_project: "stack-benchmarking"
