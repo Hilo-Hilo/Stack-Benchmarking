@@ -1,0 +1,44 @@
+FROM python:3.12-slim
+
+# Install system dependencies for building scikit-misc
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3-dev \
+    gfortran \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Stack and dependencies
+WORKDIR /app
+COPY stack/ /app/stack/
+COPY Stack-Benchmarking/ /app/Stack-Benchmarking/
+
+# Install Python deps
+RUN pip install --no-cache-dir --break-system-packages \
+    torch \
+    numpy \
+    pandas \
+    scipy \
+    scanpy \
+    anndata \
+    h5py \
+    pyyaml \
+    pytorch-lightning \
+    wandb \
+    geomloss \
+    psutil \
+    scikit-learn
+
+# Try to install scvi-tools (may fail on some platforms)
+RUN pip install --no-cache-dir --break-system-packages scvi-tools || true
+
+# Install Stack in editable mode (skip deps we already installed)
+RUN pip install --no-cache-dir --break-system-packages -e /app/stack --no-deps || true
+
+# Set Python path
+ENV PYTHONPATH=/app/stack/src:$PYTHONPATH
+
+WORKDIR /app/Stack-Benchmarking
+
+CMD ["/bin/bash"]

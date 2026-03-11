@@ -1,0 +1,22 @@
+# Core dependencies
+numpy>=1.22
+pandas>=1.5
+scipy>=1.8
+scanpy>=1.10
+anndata>=0.9
+h5py>=3.8
+
+# ML
+torch>=2.0
+scikit-learn>=1.0
+
+# Stack dependencies
+pytorch-lightning>=2.1
+pyyaml>=6.0
+geomloss>=0.2.6
+wandb>=0.15
+scvi-tools>=1.0
+
+# Utilities
+tqdm>=4.57
+psutil>=5.9

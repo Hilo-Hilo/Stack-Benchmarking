@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data (large files - keep in .gitignore)
+data/raw/
+data/processed/
+
+# Checkpoints (download from HuggingFace - see checkpoints/README.md)
+checkpoints/*.ckpt
+checkpoints/*.pkl
+
+# Outputs
+outputs/
+*.h5ad
+*.npy
+*.npz
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

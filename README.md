@@ -14,117 +14,103 @@ This project evaluates a simple question with strict benchmarking discipline:
 
 Recent evidence suggests many complex drug-response models underperform or match simpler methods when evaluation is leakage-safe and truly OOD. We are testing whether Stack changes that outcome.
 
----
+## Quick Start
 
-## Project Aims
+### 1. Install Dependencies
 
-1. **OOD perturbation prediction**  
-   Predict post-treatment expression from baseline query cells + perturbation prompts, then evaluate cold-drug / cold-cell generalization.
+```bash
+# Clone repo
+git clone https://github.com/Hilo-Hilo/Stack-Benchmarking.git
+cd Stack-Benchmarking
 
-2. **Directional biology checks**  
-   Verify predicted post-treatment transcriptomes move in biologically expected pathway / TF directions before training efficacy heads.
+# Set up Python environment (Python 3.9+)
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
 
-3. **Conditional efficacy prediction**  
-   Test whether Stack-derived perturbation-conditioned features improve AUC/AAC drug efficacy prediction under leakage-safe OOD evaluation.
+# Install requirements
+pip install -r requirements.txt
 
-4. **Stretch goal**  
-   Late-fuse **Evo 2 genotype embeddings** with Stack features if Phases 1-3 show reproducible OOD lift.
+# Install Stack
+git clone https://github.com/ArcInstitute/stack.git
+cd stack
+pip install -e .
+cd ..
+```
 
----
+### 2. Download Model Checkpoints
+
+See `checkpoints/README.md` for download instructions. You'll need:
+- `bc_large.ckpt` - Stack-Large model (~2.5 GB)
+- `basecount_1000per_15000max.pkl` - Gene list (~900 KB)
+
+### 3. Prepare Data
+
+Place your data in `data/raw/`:
+- Single-cell expression: `*.h5ad` (AnnData format, HGNC gene symbols)
+- Drug response: `*response*.csv`
+
+### 4. Run Benchmark
+
+```bash
+python -m src.main --config configs/default.yaml
+```
+
+## Project Structure
+
+```
+Stack-Benchmarking/
+├── checkpoints/       # Model weights (download from HuggingFace)
+├── configs/           # Experiment configurations
+├── data/
+│   ├── raw/          # Original datasets
+│   └── processed/    # Processed features/embeddings
+├── src/
+│   ├── data/         # Data loading & preprocessing
+│   ├── models/       # Baseline predictors & Stack wrapper
+│   └── eval/         # OOD evaluation & metrics
+├── notebooks/        # Analysis notebooks
+├── papers/           # Reference papers
+└── PROPOSAL.md       # Original project proposal
+```
 
 ## Method (3 Phases)
 
 ### Phase 1 — Perturbation-conditioned representation learning
-- Inputs:
-  - pre-treatment "query" cells
-  - prompt cells encoding **drug, dose, time, tissue context**
-- Model output:
-  - predicted post-treatment expression profiles
-  - perturbation-conditioned embeddings
-- Metrics:
-  - Pearson / R²
-  - compound-level aggregation metrics
-- Splits:
-  - held-out, cold-drug, cold-cell where feasible
+- Inputs: pre-treatment query cells + prompt cells (drug, dose, time, tissue)
+- Output: predicted post-treatment expression + perturbation-conditioned embeddings
 
 ### Phase 2 — Biological validity checks
-- Score predicted expression with pathway/signature collections
-- Methods:
-  - GSVA / ssGSEA
-  - single-cell-appropriate signature scoring
-  - pathway / TF activity inference
-- Goal:
-  - ensure representations are biologically meaningful before efficacy modeling
+- Score predicted expression with pathway collections (GSVA/ssGSEA)
 
 ### Phase 3 — Drug efficacy prediction
-- Predict endpoints per (cell line, drug):
-  - primary: **AUC / AAC**
-  - secondary (when suitable): IC50 and/or binarized sensitivity
-- Lightweight predictors:
-  - Elastic Net
-  - XGBoost / LightGBM
-  - shallow MLP
-- Controlled ablations:
-  - add Stack-conditioned features on top of strong baselines
+- Predict AUC/AAC using lightweight models (ElasticNet, XGBoost, MLP)
 
----
+## Evaluation Policy (Leakage-Safe)
 
-## Evaluation Policy (Leakage-Safe by Design)
+- Random + **cold-drug** + **cold-cell-line** splits
+- Tissue/lineage-aware splits where possible
+- Fixed-drug and fixed-cell aggregation reporting
+- All preprocessing fit inside training folds only
 
-We prioritize robustness and anti-leakage protocol:
+## Baselines
 
-- random + **cold-drug** + **cold-cell-line** splits
-- tissue / lineage-aware splits where possible
-- fixed-drug and fixed-cell aggregation reporting
-- all preprocessing fit **inside training folds only**
-- optional cross-dataset transfer checks for distribution shift stress testing
+- Raw or pseudo-bulk expression
+- Standard drug descriptors (Morgan fingerprints)
+- Marginal-effect baselines (mean-drug, mean-cell, mean(drug)+mean(cell))
 
-Baselines include:
-- raw or pseudo-bulk expression
-- standard drug descriptors (e.g., Morgan fingerprints)
-- marginal-effect baselines (mean-drug, mean-cell, mean(drug)+mean(cell))
+## Requirements
 
----
+- Python 3.9+
+- PyTorch 2.0+
+- Scanpy, anndata, scvi-tools
+- Stack (`arc-stack`)
 
-## Datasets (Planned)
+See `requirements.txt` for full list.
 
-- Single-cell perturbation datasets suitable for Stack-style conditioning (including Tahoe-100M style resources)
-- Cancer drug response resources for efficacy endpoints (e.g., CCLE/GDSC-compatible settings)
-- Optional paired cohort for stretch phase (e.g., BeatAML2) for genotype fusion
+## License
 
----
-
-## Repo Status
-
-This repository currently tracks the proposal-driven project setup and will be expanded with:
-
-- `data/` ingestion + preprocessing pipelines
-- `src/` modeling and evaluation code
-- `configs/` split definitions and experiment configs
-- `notebooks/` exploratory and analysis notebooks
-- reproducible experiment logs + benchmark tables
-
----
-
-## References
-
-Key references from proposal (abbrev.):
-
-1. scDrugMap (2025)  
-2. Tahoe-100M perturbation atlas (2025)  
-3. Wang et al., Nat Comput Sci (2026)  
-4. Wei et al., Nat Methods (2026)  
-5. Chawla et al., Nat Commun (2022)  
-6. Schubert et al., Nat Commun (2018)  
-7. Codicè et al., J Cheminformatics (2025)  
-8. Branson et al., Bioinformatics (2025)  
-9. Partin et al., Brief Bioinform (2026)  
-10. Asiaee et al., leakage preprint (2026)  
-11. Bottomly et al., Cancer Cell (2022)  
-12. Sharifi-Noghabi et al., MOLI (2019)
-
----
+Stack model weights: [Arc Research Institute Non-Commercial License](checkpoints/LICENSE)
 
 ## Contact
 
-For collaboration or review discussions, open an issue in this repo or contact the team directly.
+For questions, open an issue or contact the team.
