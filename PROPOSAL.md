@@ -1,116 +1,52 @@
-# Stack-Benchmarking Proposal
+# Stack-first benchmarking for out-of-distribution cancer drug response prediction, with staged Evo 2 genotype augmentation
 
-**Stack-first benchmarking for out-of-distribution cancer drug response prediction, with staged Evo 2 genotype augmentation**
+Team (Benign Bears): Hanson Wen, Nathan Gu, Foster Angus
 
-Team: **Hanson Wen** (Molecular Bio + CS), **Nathan Gu** (EE + CS), **Foster Angus** (Applied Math)
+### Motivation and Problem
 
----
+Recent evaluations of complex deep models for drug-response predictions demonstrate little improvement compared to simple baselines with proper evaluation. Foundation models for single‑cell and bulk expression similarly fail to consistently beat raw expression under distribution shift. We ask the question: **Do Stack's prompt-conditioned representations provide a real out-of-distribution (OOD) lift for drug perturbation + drug-response prediction, beyond strong baselines and non-ICL single-cell foundation models?** We have started working on the following: [*https://github.com/Hilo-Hilo/Stack-Benchmarking*](https://github.com/Hilo-Hilo/Stack-Benchmarking)
 
-## Overview
+### Project Aims
 
-This project evaluates a simple question with strict benchmarking discipline:
+**OOD perturbation prediction**: predict post-treatment expression from baseline query cells + perturbation prompts and quantify cold-drug / cold-cell generalization. 
 
-> **Do Stack prompt-conditioned representations provide a real out-of-distribution (OOD) lift for perturbation + drug-response prediction, beyond strong baselines and non-ICL single-cell foundation models?**
+**Directional biology checks**: verify predicted responses shift the right pathways/TF programs before training efficacy heads.
 
-Recent evidence suggests many complex drug-response models underperform or match simpler methods when evaluation is leakage-safe and truly OOD. We are testing whether Stack changes that outcome.
+**Efficacy prediction (conditional)**: test whether Stack-derived perturbation-conditioned features improve AUC/AAC prediction under leakage-safe OOD evaluation.
 
----
+**Stretch**: late-fuse Evo 2 genotype embeddings with Stack features if Phases 1–3 show a reproducible lift.
 
-## Project Aims
+### Methology
 
-1. **OOD perturbation prediction**  
-   Predict post-treatment expression from baseline query cells + perturbation prompts, then evaluate cold-drug / cold-cell generalization.
+We attempt the answer the research question via a 3 phase plan: 
 
-2. **Directional biology checks**  
-   Verify predicted post-treatment transcriptomes move in biologically expected pathway / TF directions before training efficacy heads.
+**Phase 1** aims to establish a method to obtain a drug-conditioned representation of a cell line's transcriptomic state. The inputs are (a) pre‑treatment "query" cells from a given cell line and (b) a "prompt" cell encoding drug, dose, time, and tissue context). Stack outputs drug-conditioned gene expression profiles and embeddings. Instead of fine-tuning model weights, we condition on a prompt cell that encodes the perturbation context (drug, dose, time, tissue) and examine whether this conditioning meaningfully shifts the predicted transcriptome.
 
-3. **Conditional efficacy prediction**  
-   Test whether Stack-derived perturbation-conditioned features improve AUC/AAC drug efficacy prediction under leakage-safe OOD evaluation.
+Although most labeled cancer drug-response datasets (GDSC/CCLE) are largely bulk seq in contrast to Stack's single-cell resolution input, there exist datasets curated for single cell foundational model benchmarking, including pre/post drug perturbation scRNA-Seq data. We will benchmark predicted gene expressions using Held-out splits, Pearson / R² correlation, and Compound-level aggregation, against models outlined in the research question above. 
 
-4. **Stretch goal**  
-   Late-fuse **Evo 2 genotype embeddings** with Stack features if Phases 1-3 show reproducible OOD lift.
+For **Phase 2**, before training any efficacy predictor, we will test whether the predicted post-treatment transcriptomes move in the biologically expected direction. We will score them against curated pathway and signature collections using GSVA/ssGSEA and single‑cell‑appropriate signature methods, and we will infer pathway and transcription factor activity. These approaches are widely used for interpreting transcriptomic perturbations and have direct precedent for linking perturbation signatures to viability and drug sensitivity. We will apply these existing methods to Stack produced results. 
 
----
+In **Phase 3**, we will train lightweight predictors (Elastic Net; XGBoost/LightGBM; shallow MLP) to predict drug efficacy for each (cell line, drug) pair, using AUC/AAC as primary endpoints (IC50 and/or binarized sensitivity as secondary when appropriate). To ensure gains reflect real generalization rather than shortcut learning, we will benchmark against strong baselines: raw or pseudo-bulk expression, standard drug descriptors (e.g., Morgan fingerprints), and marginal-effect models (mean-drug, mean-cell, mean(drug)+mean(cell)). We then add Stack-derived perturbation‑conditioned embeddings from Phase 1 and quantify their incremental value via controlled ablations.
 
-## Method (3 Phases)
+Evaluation will prioritize robustness: random, cold-drug, cold-cell-line, and tissue/lineage-aware splits (when feasible), and we will include fixed‑drug and fixed‑cell aggregation. All preprocessing (scaling, gene filtering, dimensionality reduction, feature selection) will be fit strictly within training folds using end-to-end pipelines to prevent leakage. Where feasible, we will add a cross‑dataset transfer check (train on one screen, test on another) to stress-test robustness under distribution shift.
 
-### Phase 1 — Perturbation-conditioned representation learning
-- Inputs:
-  - pre-treatment "query" cells
-  - prompt cells encoding **drug, dose, time, tissue context**
-- Model output:
-  - predicted post-treatment expression profiles
-  - perturbation-conditioned embeddings
-- Metrics:
-  - Pearson / R²
-  - compound-level aggregation metrics
-- Splits:
-  - held-out, cold-drug, cold-cell where feasible
+**Stretch**: If Stack features demonstrate a reproducible OOD lift, we will test whether late‑fused Evo 2 genotype embeddings improve performance on a paired patient cohort (e.g., BeatAML2) using the same lightweight predictors with strong regularization. 
 
-### Phase 2 — Biological validity checks
-- Score predicted expression with pathway/signature collections
-- Methods:
-  - GSVA / ssGSEA
-  - single-cell-appropriate signature scoring
-  - pathway / TF activity inference
-- Goal:
-  - ensure representations are biologically meaningful before efficacy modeling
+### Fellowship Goals and Team Fit
 
-### Phase 3 — Drug efficacy prediction
-- Predict endpoints per (cell line, drug):
-  - primary: **AUC / AAC**
-  - secondary (when suitable): IC50 and/or binarized sensitivity
-- Lightweight predictors:
-  - Elastic Net
-  - XGBoost / LightGBM
-  - shallow MLP
-- Controlled ablations:
-  - add Stack-conditioned features on top of strong baselines
+We have been following published works from Arc for a long time. This would be an incredible opportunity to work on something this team **truly cares about**. Everyone in this team desires to work on AIxBio topics in the future, with foundation models being a strong topic of interest. We want to understand when foundation models actually help in biological prediction and when simpler methods are enough. A stretch goal would be to understand the trade-off between fully self supervised learning and biologically informed biological models. Our team of 3 had a great time teaming previously on various projects, from iGEM to hackathons. The brainstorming of this project refined our collaboration further. We love working and each other and we are **fully dedicated** to bringing this project to life whilst working with Arc. 
 
----
+### References
 
-## Evaluation Policy (Leakage-Safe by Design)
-
-We prioritize robustness and anti-leakage protocol:
-
-- random + **cold-drug** + **cold-cell-line** splits
-- tissue / lineage-aware splits where possible
-- fixed-drug and fixed-cell aggregation reporting
-- all preprocessing fit **inside training folds only**
-- optional cross-dataset transfer checks for distribution shift stress testing
-
-Baselines include:
-- raw or pseudo-bulk expression
-- standard drug descriptors (e.g., Morgan fingerprints)
-- marginal-effect baselines (mean-drug, mean-cell, mean(drug)+mean(cell))
-
----
-
-## Datasets (Planned)
-
-- Single-cell perturbation datasets suitable for Stack-style conditioning (including Tahoe-100M style resources)
-- Cancer drug response resources for efficacy endpoints (e.g., CCLE/GDSC-compatible settings)
-- Optional paired cohort for stretch phase (e.g., BeatAML2) for genotype fusion
-
----
-
-## Key References
-
-1. scDrugMap (2025)  
-2. Tahoe-100M perturbation atlas (2025)  
-3. Wang et al., Nat Comput Sci (2026)  
-4. Wei et al., Nat Methods (2026)  
-5. Chawla et al., Nat Commun (2022)  
-6. Schubert et al., Nat Commun (2018)  
-7. Codicè et al., J Cheminformatics (2025)  
-8. Branson et al., Bioinformatics (2025)  
-9. Partin et al., Brief Bioinform (2026)  
-10. Asiaee et al., leakage preprint (2026)  
-11. Bottomly et al., Cancer Cell (2022)  
-12. Sharifi-Noghabi et al., MOLI (2019)
-
----
-
-## Contact
-
-For collaboration or review discussions, open an issue in this repo or contact the team directly.
+1. scDrugMap: Single-cell drug response prediction using attention-based neural networks. (2025).
+2. Tahoe (Vevo Therapeutics). Tahoe-100M: A Giga-Scale Single-Cell Perturbation Atlas for Context-Dependent Gene Function and Cellular Modeling. bioRxiv (2025).
+3. Wang, Y. et al. Predicting drug responses of unseen cell types through transfer learning with foundation models. Nat. Comput. Sci. 6, 39–52 (2026).
+4. Wei, Z. et al. Benchmarking algorithms for generalizable single-cell perturbation response prediction. Nat. Methods 23, 451–464 (2026).
+5. Chawla, S. et al. Gene expression based inference of cancer drug sensitivity. Nat. Commun. 13, 5680 (2022).
+6. Schubert, M. et al. Perturbation-response genes reveal signaling footprints in cancer gene expression. Nat. Commun. 9, 20 (2018).
+7. Codicè, F. et al. The specification game: rethinking the evaluation of drug response prediction for precision oncology. J. Cheminformatics 17, 33 (2025).
+8. Branson, N., Cutillas, P. R. & Bessant, C. Understanding the sources of performance in deep drug response models reveals insights and improvements. Bioinformatics 41, i142–i149 (2025).
+9. Partin, A. et al. Benchmarking community drug response prediction models: datasets, models, tools, and metrics for cross-dataset generalization analysis. Brief. Bioinform. 27, bbaf667 (2026).
+10. Asiaee, A. et al. Widespread data leakage inflates performance estimates in cancer drug response prediction. Preprint at https://doi.org/10.64898/2026.02.05.704016 (2026).
+11. Bottomly, D. et al. Integrative analysis of drug response and clinical outcome in acute myeloid leukemia. Cancer Cell 40, 850-864.e9 (2022).
+12. Sharifi-Noghabi, H., Zolotareva, O., Collins, C. C. & Ester, M. MOLI: multi-omics late integration with deep neural networks for drug response prediction. Bioinformatics 35, i501–i509 (2019).
